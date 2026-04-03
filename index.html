@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Creative Blog Writer</title>
+    <style>
+      :root {
+        --bg: #f2efe8;
+        --panel: #fffdf8;
+        --text: #1f2a36;
+        --sub: #5c6b78;
+        --accent: #0f766e;
+        --accent-strong: #115e59;
+        --line: #d9d1c2;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 8% 12%, #f9d8a9 0 18%, transparent 19%),
+          radial-gradient(circle at 90% 20%, #bee3db 0 16%, transparent 17%),
+          linear-gradient(145deg, #f7f2e9, #e9f1f0 60%, #f4eee2);
+        font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+        min-height: 100vh;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 28px auto;
+        padding: 0 16px 24px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 18px 40px rgba(29, 40, 54, 0.08);
+        overflow: hidden;
+      }
+      .head {
+        padding: 20px;
+        border-bottom: 1px solid var(--line);
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(1.3rem, 1.8vw, 1.9rem);
+      }
+      .sub {
+        margin-top: 8px;
+        color: var(--sub);
+      }
+      .form {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1.2fr 0.8fr 0.8fr 0.7fr;
+        padding: 18px 20px;
+      }
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      label { font-size: 0.9rem; color: var(--sub); }
+      input, select {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        background: #fff;
+      }
+      .actions {
+        padding: 0 20px 18px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      button {
+        border: 0;
+        background: var(--accent);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+      button:hover { background: var(--accent-strong); }
+      .msg { color: var(--sub); font-size: 0.92rem; }
+      .result {
+        border-top: 1px solid var(--line);
+        padding: 20px;
+        line-height: 1.75;
+        white-space: pre-wrap;
+      }
+      @media (max-width: 900px) {
+        .form { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 560px) {
+        .form { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <div class="head">
+          <h1>Creative Blog Writer</h1>
+          <div class="sub">키워드 하나로 GPT가 창의적인 블로그 글을 생성합니다.</div>
+        </div>
+
+        <div class="form">
+          <div class="field">
+            <label for="keyword">키워드</label>
+            <input id="keyword" placeholder="예: 미니멀 라이프" />
+          </div>
+          <div class="field">
+            <label for="model">모델</label>
+            <select id="model">
+              <option value="gpt-4.1-mini" selected>gpt-4.1-mini</option>
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="language">출력 언어</label>
+            <select id="language">
+              <option value="Korean" selected>Korean</option>
+              <option value="English">English</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="temperature">창의성 (0~2)</label>
+            <input id="temperature" type="number" min="0" max="2" step="0.1" value="0.9" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="generateBtn">블로그 글 생성</button>
+          <span id="message" class="msg"></span>
+        </div>
+
+        <div id="result" class="result">아직 생성된 글이 없습니다.</div>
+      </div>
+    </div>
+
+    <script>
+      const btn = document.getElementById("generateBtn");
+      const result = document.getElementById("result");
+      const message = document.getElementById("message");
+
+      btn.addEventListener("click", async () => {
+        const keyword = document.getElementById("keyword").value.trim();
+        const model = document.getElementById("model").value;
+        const language = document.getElementById("language").value;
+        const temperature = Number(document.getElementById("temperature").value || "0.9");
+
+        if (!keyword) {
+          message.textContent = "키워드를 입력해주세요.";
+          return;
+        }
+
+        btn.disabled = true;
+        message.textContent = "생성 중...";
+        result.textContent = "";
+
+        try {
+          const response = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ keyword, model, language, temperature }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || "생성 실패");
+          }
+
+          result.textContent = data.text || "응답이 비어 있습니다.";
+          message.textContent = "완료";
+        } catch (err) {
+          message.textContent = "오류";
+          result.textContent = "오류: " + (err.message || "알 수 없는 오류");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
