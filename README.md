@@ -51,6 +51,7 @@ Features:
 This repository now includes a Vercel-ready web entry and API:
 - `index.html` (root page)
 - `api/generate.js` (serverless function)
+- `vercel.json` (forces static + Node build to avoid Python auto-detection build errors)
 
 Deploy steps:
 1. Import this GitHub repo in Vercel.
