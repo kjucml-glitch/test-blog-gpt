@@ -4,7 +4,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { keyword, model = "gpt-4.1-mini", language = "Korean", temperature = 0.9 } = req.body || {};
+    const {
+      keyword,
+      model = "gpt-4.1-mini",
+      language = "Korean",
+      temperature = 0.9,
+      style = "친근하게",
+    } = req.body || {};
 
     if (!keyword || !String(keyword).trim()) {
       return res.status(400).json({ error: "keyword is required" });
@@ -15,7 +21,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "OPENAI_API_KEY is not configured" });
     }
 
-    const prompt = `Write a highly creative, SEO-friendly blog post about '${String(keyword).trim()}' in ${language}. Use a unique angle, memorable storytelling, and practical takeaways. Include:\n1) A strong title\n2) An engaging introduction\n3) 3-5 section headings with useful details\n4) A concise summary\n5) 5 relevant hashtags\nTone: warm, insightful, and concrete. Avoid fluff and repetition.`;
+    const toneByStyle = {
+      친근하게: "friendly, warm, conversational",
+      진지하게: "serious, authoritative, analytical",
+    };
+    const tone = toneByStyle[style] || toneByStyle["친근하게"];
+
+    const prompt = `Write a highly creative, SEO-friendly blog post about '${String(keyword).trim()}' in ${language}. Use a unique angle, memorable storytelling, and practical takeaways. Include:\n1) A strong title\n2) An engaging introduction\n3) 3-5 section headings with useful details\n4) A concise summary\n5) 5 relevant hashtags\nStyle: ${style}\nTone: ${tone}. Avoid fluff and repetition.`;
 
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",

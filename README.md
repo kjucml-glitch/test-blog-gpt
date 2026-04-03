@@ -30,6 +30,12 @@ Choose model/language/creativity:
 python blog_writer.py "홈카페" --model gpt-4.1-mini --language Korean --temperature 1.0
 ```
 
+Choose writing style:
+```bash
+python blog_writer.py "홈카페" --style 친근하게
+python blog_writer.py "홈카페" --style 진지하게
+```
+
 Save output to file:
 ```bash
 python blog_writer.py "여행 사진" --save post.md
@@ -43,6 +49,7 @@ streamlit run streamlit_app.py
 
 Features:
 - Enter one keyword and click a button to generate a post.
+- Pick writing style with buttons: `친근하게` / `진지하게`.
 - Set model/language/temperature in the sidebar.
 - Input API key in the sidebar (or use `OPENAI_API_KEY` env).
 - Download generated content as Markdown.
@@ -65,3 +72,4 @@ After deploy, opening the root URL should no longer show `404: NOT_FOUND`.
 - `BLOG_MODEL` (default: `gpt-4.1-mini`)
 - `BLOG_LANGUAGE` (default: `Korean`)
 - `BLOG_TEMPERATURE` (default: `0.9`)
+- `BLOG_STYLE` (default: `친근하게`)

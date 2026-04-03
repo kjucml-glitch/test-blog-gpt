@@ -6,7 +6,14 @@ from typing import Optional
 from openai import OpenAI
 
 
-def build_prompt(keyword: str, language: str) -> str:
+STYLE_TONE = {
+    "친근하게": "friendly, warm, conversational",
+    "진지하게": "serious, authoritative, analytical",
+}
+
+
+def build_prompt(keyword: str, language: str, style: str) -> str:
+    tone = STYLE_TONE.get(style, STYLE_TONE["친근하게"])
     return (
         f"Write a highly creative, SEO-friendly blog post about '{keyword}' in {language}. "
         "Use a unique angle, memorable storytelling, and practical takeaways. "
@@ -16,7 +23,8 @@ def build_prompt(keyword: str, language: str) -> str:
         "3) 3-5 section headings with useful details\n"
         "4) A concise summary\n"
         "5) 5 relevant hashtags\n"
-        "Tone: warm, insightful, and concrete. Avoid fluff and repetition."
+        f"Style: {style}. "
+        f"Tone: {tone}. Avoid fluff and repetition."
     )
 
 
@@ -25,6 +33,7 @@ def create_blog_post(
     model: str = "gpt-4.1-mini",
     language: str = "Korean",
     temperature: float = 0.9,
+    style: str = "친근하게",
     api_key: Optional[str] = None,
 ) -> str:
     resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
@@ -44,7 +53,7 @@ def create_blog_post(
                     "Do not copy existing copyrighted text."
                 ),
             },
-            {"role": "user", "content": build_prompt(keyword, language)},
+            {"role": "user", "content": build_prompt(keyword, language, style)},
         ],
     )
 
@@ -85,6 +94,12 @@ def parse_args() -> argparse.Namespace:
         help="Creativity level between 0.0 and 2.0 (default: 0.9)",
     )
     parser.add_argument(
+        "--style",
+        default=os.getenv("BLOG_STYLE", "친근하게"),
+        choices=["친근하게", "진지하게"],
+        help="Writing style: 친근하게 or 진지하게 (default: 친근하게)",
+    )
+    parser.add_argument(
         "--save",
         default=None,
         help="Optional output file path (e.g., post.md)",
@@ -101,6 +116,7 @@ def main() -> int:
             model=args.model,
             language=args.language,
             temperature=args.temperature,
+            style=args.style,
         )
     except Exception as exc:
         print(f"Error: {exc}", file=sys.stderr)

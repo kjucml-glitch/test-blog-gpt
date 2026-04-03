@@ -26,6 +26,7 @@ with st.sidebar:
         help="기본값은 가성비가 좋은 gpt-4.1-mini입니다.",
     )
     language = st.selectbox("출력 언어", options=["Korean", "English"], index=0)
+    style = st.segmented_control("글 스타일", options=["친근하게", "진지하게"], default="친근하게")
     temperature = st.slider("창의성(temperature)", min_value=0.0, max_value=2.0, value=0.9, step=0.1)
 
 keyword = st.text_input("키워드", placeholder="예: 미니멀 라이프")
@@ -46,6 +47,7 @@ if generate_clicked:
                         model=model,
                         language=language,
                         temperature=temperature,
+                        style=style or "친근하게",
                         api_key=effective_api_key,
                     )
 

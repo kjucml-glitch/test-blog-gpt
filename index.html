@@ -80,6 +80,28 @@
         cursor: pointer;
       }
       button:hover { background: var(--accent-strong); }
+      .style-pick {
+        padding: 0 20px 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .style-label {
+        color: var(--sub);
+        font-size: 0.9rem;
+        margin-right: 6px;
+      }
+      .tone-btn {
+        background: #e8ecef;
+        color: #334155;
+      }
+      .tone-btn:hover {
+        background: #dbe3e8;
+      }
+      .tone-btn.active {
+        background: #1f2937;
+        color: #fff;
+      }
       .msg { color: var(--sub); font-size: 0.92rem; }
       .result {
         border-top: 1px solid var(--line);
@@ -128,6 +150,12 @@
           </div>
         </div>
 
+        <div class="style-pick">
+          <span class="style-label">글 스타일</span>
+          <button id="friendlyBtn" class="tone-btn active" type="button">친근하게</button>
+          <button id="seriousBtn" class="tone-btn" type="button">진지하게</button>
+        </div>
+
         <div class="actions">
           <button id="generateBtn">블로그 글 생성</button>
           <span id="message" class="msg"></span>
@@ -139,8 +167,21 @@
 
     <script>
       const btn = document.getElementById("generateBtn");
+      const friendlyBtn = document.getElementById("friendlyBtn");
+      const seriousBtn = document.getElementById("seriousBtn");
       const result = document.getElementById("result");
       const message = document.getElementById("message");
+      let selectedStyle = "친근하게";
+
+      function setStyle(style) {
+        selectedStyle = style;
+        const isFriendly = style === "친근하게";
+        friendlyBtn.classList.toggle("active", isFriendly);
+        seriousBtn.classList.toggle("active", !isFriendly);
+      }
+
+      friendlyBtn.addEventListener("click", () => setStyle("친근하게"));
+      seriousBtn.addEventListener("click", () => setStyle("진지하게"));
 
       btn.addEventListener("click", async () => {
         const keyword = document.getElementById("keyword").value.trim();
@@ -161,7 +202,7 @@
           const response = await fetch("/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ keyword, model, language, temperature }),
+            body: JSON.stringify({ keyword, model, language, temperature, style: selectedStyle }),
           });
 
           const data = await response.json();
