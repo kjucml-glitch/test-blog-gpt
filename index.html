@@ -70,6 +70,21 @@
         gap: 10px;
         align-items: center;
       }
+      .actions .spacer {
+        flex: 1;
+      }
+      .print-meta-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.88rem;
+        color: var(--sub);
+      }
+      .print-meta-toggle input {
+        width: 14px;
+        height: 14px;
+        accent-color: #334155;
+      }
       button {
         border: 0;
         background: var(--accent);
@@ -80,6 +95,16 @@
         cursor: pointer;
       }
       button:hover { background: var(--accent-strong); }
+      #printBtn {
+        background: #334155;
+      }
+      #printBtn:hover {
+        background: #1e293b;
+      }
+      #printBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
       .style-pick {
         padding: 0 20px 14px;
         display: flex;
@@ -159,6 +184,12 @@
         <div class="actions">
           <button id="generateBtn">블로그 글 생성</button>
           <span id="message" class="msg"></span>
+          <span class="spacer" aria-hidden="true"></span>
+          <label class="print-meta-toggle" for="hidePrintMeta">
+            <input id="hidePrintMeta" type="checkbox" checked />
+            메타 숨기기
+          </label>
+          <button id="printBtn" type="button" disabled>인쇄</button>
         </div>
 
         <div id="result" class="result">아직 생성된 글이 없습니다.</div>
@@ -167,6 +198,8 @@
 
     <script>
       const btn = document.getElementById("generateBtn");
+      const printBtn = document.getElementById("printBtn");
+      const hidePrintMeta = document.getElementById("hidePrintMeta");
       const friendlyBtn = document.getElementById("friendlyBtn");
       const seriousBtn = document.getElementById("seriousBtn");
       const result = document.getElementById("result");
@@ -183,6 +216,127 @@
       friendlyBtn.addEventListener("click", () => setStyle("친근하게"));
       seriousBtn.addEventListener("click", () => setStyle("진지하게"));
 
+      function extractPrintableContent(rawText) {
+        const lines = rawText.split("\n");
+        let title = "생성된 블로그 글";
+        let bodyStartIndex = 0;
+
+        for (let i = 0; i < lines.length; i += 1) {
+          const line = lines[i].trim();
+          if (!line) {
+            continue;
+          }
+
+          const mdTitleMatch = line.match(/^\*\*(.+)\*\*$/);
+          if (mdTitleMatch) {
+            title = mdTitleMatch[1].trim();
+            bodyStartIndex = i + 1;
+          } else {
+            title = line.replace(/^#+\s*/, "").trim();
+            bodyStartIndex = i + 1;
+          }
+          break;
+        }
+
+        const bodyText = lines.slice(bodyStartIndex).join("\n").trim() || rawText;
+        return { title, bodyText };
+      }
+
+      function toSafeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\n\n+/g, "</p><p>")
+          .replace(/\n/g, "<br>");
+      }
+
+      printBtn.addEventListener("click", () => {
+        const textToPrint = (result.textContent || "").trim();
+        if (!textToPrint) {
+          message.textContent = "인쇄할 내용이 없습니다.";
+          return;
+        }
+
+        const { title, bodyText } = extractPrintableContent(textToPrint);
+        const keyword = document.getElementById("keyword").value.trim() || "(미입력)";
+        const language = document.getElementById("language").value;
+        const style = selectedStyle;
+        const printedAt = new Date().toLocaleString("ko-KR");
+        const bodyHtml = `<p>${toSafeHtml(bodyText)}</p>`;
+        const showMeta = !hidePrintMeta.checked;
+        const metaHtml = showMeta
+          ? `<div class="meta">키워드: ${toSafeHtml(keyword)} | 언어: ${toSafeHtml(language)} | 스타일: ${toSafeHtml(style)} | 인쇄 시각: ${toSafeHtml(printedAt)}</div>`
+          : "";
+
+        const printWindow = window.open("", "_blank", "width=960,height=720");
+        if (!printWindow) {
+          message.textContent = "팝업이 차단되어 인쇄 창을 열 수 없습니다.";
+          return;
+        }
+
+        printWindow.document.write(`
+          <!doctype html>
+          <html lang="ko">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>블로그 글 인쇄</title>
+              <style>
+                body {
+                  margin: 0;
+                  padding: 32px;
+                  color: #111827;
+                  font-family: "Noto Sans KR", "Segoe UI", sans-serif;
+                  line-height: 1.78;
+                  background: #fff;
+                }
+                h1 {
+                  margin: 0;
+                  font-size: 1.5rem;
+                  line-height: 1.35;
+                }
+                .meta {
+                  margin-top: 12px;
+                  color: #475569;
+                  font-size: 0.92rem;
+                  border-top: 1px solid #e2e8f0;
+                  border-bottom: 1px solid #e2e8f0;
+                  padding: 10px 0;
+                }
+                .content {
+                  margin-top: 20px;
+                  font-size: 1rem;
+                }
+                .content p {
+                  margin: 0 0 14px;
+                }
+                @media print {
+                  @page {
+                    size: A4;
+                    margin: 18mm;
+                  }
+                  body {
+                    padding: 0;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <h1>${toSafeHtml(title)}</h1>
+              ${metaHtml}
+              <div class="content">${bodyHtml}</div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      });
+
       btn.addEventListener("click", async () => {
         const keyword = document.getElementById("keyword").value.trim();
         const model = document.getElementById("model").value;
@@ -195,6 +349,7 @@
         }
 
         btn.disabled = true;
+        printBtn.disabled = true;
         message.textContent = "생성 중...";
         result.textContent = "";
 
@@ -212,9 +367,11 @@
 
           result.textContent = data.text || "응답이 비어 있습니다.";
           message.textContent = "완료";
+          printBtn.disabled = !data.text;
         } catch (err) {
           message.textContent = "오류";
           result.textContent = "오류: " + (err.message || "알 수 없는 오류");
+          printBtn.disabled = true;
         } finally {
           btn.disabled = false;
         }
