@@ -59,8 +59,66 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: message });
     }
 
-    const outputText = data?.output_text || "";
-    return res.status(200).json({ text: outputText });
+    const extractText = (payload) => {
+      if (!payload || typeof payload !== "object") {
+        return "";
+      }
+
+      if (typeof payload.output_text === "string" && payload.output_text.trim()) {
+        return payload.output_text.trim();
+      }
+
+      const outputContent = (payload.output || []).flatMap((item) => item?.content || []);
+      const textFromOutput = outputContent
+        .map((content) => {
+          if (typeof content?.text === "string") {
+            return content.text;
+          }
+          if (typeof content?.text?.value === "string") {
+            return content.text.value;
+          }
+          return "";
+        })
+        .filter(Boolean)
+        .join("\n")
+        .trim();
+      if (textFromOutput) {
+        return textFromOutput;
+      }
+
+      // Compatibility fallback for chat-completions-like payloads.
+      const content = payload?.choices?.[0]?.message?.content;
+      if (typeof content === "string" && content.trim()) {
+        return content.trim();
+      }
+      if (Array.isArray(content)) {
+        const textFromChoices = content
+          .map((item) => {
+            if (typeof item?.text === "string") {
+              return item.text;
+            }
+            if (typeof item === "string") {
+              return item;
+            }
+            return "";
+          })
+          .filter(Boolean)
+          .join("\n")
+          .trim();
+        if (textFromChoices) {
+          return textFromChoices;
+        }
+      }
+
+      return "";
+    };
+
+    const outputText = extractText(data);
+    if (!outputText) {
+      return res.status(502).json({ error: "Model returned an empty response" });
+    }
+
+    return res.status(200).json({ text: outputText.trim() });
   } catch (error) {
     return res.status(500).json({ error: error?.message || "Unknown server error" });
   }
